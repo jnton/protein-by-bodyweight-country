@@ -229,7 +229,7 @@ function readUrlState() {
     .split(",")
     .map((code) => code.trim().toUpperCase())
     .filter((code) => state.countries.has(code));
-  if (countries.length) state.selectedCodes = [...new Set(countries)].slice(0, MAX_COUNTRIES);
+  if (params.has("countries")) state.selectedCodes = [...new Set(countries)].slice(0, MAX_COUNTRIES);
 
   const benchmarks = (params.get("benchmarks") || "")
     .split(",")
@@ -250,7 +250,7 @@ function syncUrl() {
   const params = new URLSearchParams();
   params.set("metric", state.metric);
   params.set("year", String(state.year));
-  if (state.selectedCodes.length) params.set("countries", state.selectedCodes.join(","));
+  params.set("countries", state.selectedCodes.join(","));
   params.set("benchmarks", [...state.activeBenchmarks].join(","));
   params.set("reference", state.primaryBenchmark);
   params.set("weight", String(state.personalWeight));
