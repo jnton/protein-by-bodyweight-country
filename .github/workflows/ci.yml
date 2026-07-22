@@ -22,7 +22,9 @@ jobs:
       - name: Check source syntax and browser contract
         run: |
           python -m py_compile scripts/build_dataset.py scripts/check_web_contract.py
-          node --check web/app.js
+          node --check web/app-data.js
+          node --check web/app-charts.js
+          node --check web/app-main.js
           python scripts/check_web_contract.py
       - run: python scripts/build_dataset.py
       - name: Check generated outputs
