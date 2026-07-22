@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -28,6 +29,13 @@ jobs:
       - name: Assemble static site
         run: |
           cp -R web/. dist/
+          mkdir -p dist/vendor
+          curl --fail --location --retry 3 --retry-all-errors \
+            https://cdn.plot.ly/plotly-geo-3.5.1.min.js \
+            --output dist/vendor/plotly-geo-3.5.1.min.js
+          test -s dist/vendor/plotly-geo-3.5.1.min.js
+          test -s dist/data/explorer.json
+          rm -f dist/data/protein_bodyweight_country_year.json
           touch dist/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
