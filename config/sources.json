@@ -1,0 +1,28 @@
+{
+  "protein_supply": {
+    "name": "Daily per-capita protein supply",
+    "provider": "FAOSTAT via Our World in Data",
+    "url": "https://ourworldindata.org/grapher/daily-per-capita-protein-supply.csv?v=1&csvType=full&useColumnShortNames=false",
+    "metadata_url": "https://ourworldindata.org/grapher/daily-per-capita-protein-supply.metadata.json?v=1&csvType=full&useColumnShortNames=false"
+  },
+  "bmi_male": {
+    "name": "Mean body mass index in adult men",
+    "provider": "WHO GHO / NCD-RisC via Our World in Data",
+    "url": "https://ourworldindata.org/grapher/mean-body-mass-index-bmi-in-adult-males.csv?v=1&csvType=full&useColumnShortNames=false"
+  },
+  "bmi_female": {
+    "name": "Mean body mass index in adult women",
+    "provider": "WHO GHO / NCD-RisC via Our World in Data",
+    "url": "https://ourworldindata.org/grapher/mean-body-mass-index-bmi-in-adult-women.csv?v=1&csvType=full&useColumnShortNames=false"
+  },
+  "height_male": {
+    "name": "Average height of adult men by birth cohort",
+    "provider": "NCD-RisC via Our World in Data",
+    "url": "https://ourworldindata.org/grapher/average-height-of-men.csv?v=1&csvType=full&useColumnShortNames=false"
+  },
+  "height_female": {
+    "name": "Average height of adult women by birth cohort",
+    "provider": "NCD-RisC via Our World in Data",
+    "url": "https://ourworldindata.org/grapher/average-height-of-women.csv?v=1&csvType=full&useColumnShortNames=false"
+  }
+}
