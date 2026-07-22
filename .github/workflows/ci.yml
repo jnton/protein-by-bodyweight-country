@@ -2,7 +2,7 @@ name: Validate data pipeline
 
 on:
   push:
-    branches: [main, portfolio-release]
+    branches: [main]
   pull_request:
 
 permissions:
@@ -11,6 +11,7 @@ permissions:
 jobs:
   build-and-validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,11 +19,30 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
+      - name: Check source syntax
+        run: |
+          python -m py_compile scripts/build_dataset.py
+          node --check web/app.js
       - run: python scripts/build_dataset.py
       - name: Check generated outputs
         run: |
           test -s data/derived/protein_bodyweight_country_year.csv
           test -s data/derived/protein_bodyweight_country_year.json
+          test -s data/derived/explorer.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("data/derived/explorer.json")
+          payload = json.loads(path.read_text(encoding="utf-8"))
+          assert payload["countries"], "country dictionary is empty"
+          assert payload["rows"], "explorer rows are empty"
+          assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
+          assert path.stat().st_size < 1_000_000, "browser payload unexpectedly exceeds 1 MB"
+          print(f"Validated {len(payload['rows']):,} browser rows in {path.stat().st_size:,} bytes")
+          PY
+      - name: Check deploy-time chart bundle
+        run: curl --fail --head --location --retry 3 https://cdn.plot.ly/plotly-geo-3.5.1.min.js
       - uses: actions/upload-artifact@v4
         with:
           name: preview-dataset
