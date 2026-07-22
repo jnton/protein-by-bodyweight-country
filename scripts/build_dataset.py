@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""Build the preliminary country-year protein/bodyweight dataset.
+
+This first public model is intentionally conservative. It combines national
+protein supply with an adult bodyweight proxy derived from sex-specific,
+age-standardized BMI and sex-specific adult height by representative birth
+cohort. It is not an estimate of individual dietary intake.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+from io import BytesIO
+from pathlib import Path
+from typing import Iterable
+
+import pandas as pd
+import requests
+
+ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_CONFIG = ROOT / "config" / "sources.json"
+REPRESENTATIVE_ADULT_AGE = 40
+USER_AGENT = "protein-by-bodyweight-country/0.1 (+https://github.com/jnton/protein-by-bodyweight-country)"
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "data" / "derived")
+    return parser.parse_args()
+
+
+def download_csv(url: str) -> pd.DataFrame:
+    response = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=120)
+    response.raise_for_status()
+    return pd.read_csv(BytesIO(response.content))
+
+
+def value_column(frame: pd.DataFrame) -> str:
+    dimensions = {"Entity", "Code", "Year"}
+    candidates = [column for column in frame.columns if column not in dimensions]
+    if len(candidates) != 1:
+        raise ValueError(f"Expected exactly one value column, found {candidates}")
+    return candidates[0]
+
+
+def tidy(frame: pd.DataFrame, value_name: str) -> pd.DataFrame:
+    column = value_column(frame)
+    result = frame.rename(columns={column: value_name}).copy()
+    result = result[result["Code"].notna() & result["Code"].str.fullmatch(r"[A-Z]{3}")]
+    result["Year"] = pd.to_numeric(result["Year"], errors="coerce").astype("Int64")
+    result[value_name] = pd.to_numeric(result[value_name], errors="coerce")
+    return result[["Entity", "Code", "Year", value_name]].dropna(subset=["Year"])
+
+
+def interpolate_height(height: pd.DataFrame, target_years: Iterable[int], value_name: str) -> pd.DataFrame:
+    rows: list[pd.DataFrame] = []
+    target_years = sorted(set(int(year) for year in target_years))
+    for code, group in height.groupby("Code", sort=False):
+        group = group.sort_values("Year").drop_duplicates("Year")
+        if group.empty:
+            continue
+        source = group.set_index("Year")[value_name]
+        union = source.index.union(pd.Index(target_years, dtype="int64"))
+        interpolated = source.reindex(union).sort_index().interpolate(method="index", limit_area="inside")
+        selected = interpolated.reindex(target_years)
+        entity = group["Entity"].iloc[0]
+        rows.append(
+            pd.DataFrame(
+                {
+                    "Entity": entity,
+                    "Code": code,
+                    "Year": target_years,
+                    value_name: selected.values,
+                    f"{value_name}_interpolated": ~pd.Index(target_years).isin(source.index),
+                }
+            )
+        )
+    if not rows:
+        return pd.DataFrame(columns=["Entity", "Code", "Year", value_name])
+    return pd.concat(rows, ignore_index=True)
+
+
+def validate(frame: pd.DataFrame) -> None:
+    duplicates = frame.duplicated(["Code", "Year"]).sum()
+    if duplicates:
+        raise ValueError(f"Found {duplicates} duplicate country-year rows")
+
+    derived = frame.dropna(subset=["protein_supply_g_day", "estimated_adult_bodyweight_kg", "protein_supply_g_kg_day"])
+    if derived.empty:
+        raise ValueError("No normalized records were generated")
+
+    recalculated = derived["protein_supply_g_day"] / derived["estimated_adult_bodyweight_kg"]
+    max_error = (recalculated - derived["protein_supply_g_kg_day"]).abs().max()
+    if max_error > 1e-10:
+        raise ValueError(f"Derived ratio validation failed; max error={max_error}")
+
+    weight = derived["estimated_adult_bodyweight_kg"]
+    if not weight.between(30, 160).all():
+        bad = derived.loc[~weight.between(30, 160), ["Entity", "Year", "estimated_adult_bodyweight_kg"]]
+        raise ValueError(f"Implausible bodyweight estimates:\n{bad.head()}")
+
+    ratio = derived["protein_supply_g_kg_day"]
+    if not ratio.between(0.2, 5.0).all():
+        bad = derived.loc[~ratio.between(0.2, 5.0), ["Entity", "Year", "protein_supply_g_kg_day"]]
+        raise ValueError(f"Implausible protein ratios:\n{bad.head()}")
+
+
+def main() -> None:
+    args = parse_args()
+    sources = json.loads(args.config.read_text(encoding="utf-8"))
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    protein = tidy(download_csv(sources["protein_supply"]["url"]), "protein_supply_g_day")
+    bmi_male = tidy(download_csv(sources["bmi_male"]["url"]), "bmi_male")
+    bmi_female = tidy(download_csv(sources["bmi_female"]["url"]), "bmi_female")
+    height_male = tidy(download_csv(sources["height_male"]["url"]), "height_male_cm")
+    height_female = tidy(download_csv(sources["height_female"]["url"]), "height_female_cm")
+
+    bmi = bmi_male.merge(bmi_female, on=["Entity", "Code", "Year"], how="inner")
+    bmi["birth_cohort"] = bmi["Year"].astype(int) - REPRESENTATIVE_ADULT_AGE
+
+    height_years = bmi["birth_cohort"].unique().tolist()
+    male_height = interpolate_height(height_male, height_years, "height_male_cm").rename(columns={"Year": "birth_cohort"})
+    female_height = interpolate_height(height_female, height_years, "height_female_cm").rename(columns={"Year": "birth_cohort"})
+
+    anthropometry = bmi.merge(
+        male_height.drop(columns=["Entity"]), on=["Code", "birth_cohort"], how="left"
+    ).merge(
+        female_height.drop(columns=["Entity"]), on=["Code", "birth_cohort"], how="left"
+    )
+
+    anthropometry["estimated_male_weight_kg"] = anthropometry["bmi_male"] * (anthropometry["height_male_cm"] / 100) ** 2
+    anthropometry["estimated_female_weight_kg"] = anthropometry["bmi_female"] * (anthropometry["height_female_cm"] / 100) ** 2
+    anthropometry["estimated_adult_bodyweight_kg"] = (
+        anthropometry["estimated_male_weight_kg"] + anthropometry["estimated_female_weight_kg"]
+    ) / 2
+    anthropometry["height_interpolated"] = (
+        anthropometry["height_male_cm_interpolated"].fillna(True)
+        | anthropometry["height_female_cm_interpolated"].fillna(True)
+    )
+
+    keep = anthropometry[
+        [
+            "Code",
+            "Year",
+            "birth_cohort",
+            "bmi_male",
+            "bmi_female",
+            "height_male_cm",
+            "height_female_cm",
+            "estimated_adult_bodyweight_kg",
+            "height_interpolated",
+        ]
+    ]
+    result = protein.merge(keep, on=["Code", "Year"], how="left")
+    result["protein_supply_g_kg_day"] = result["protein_supply_g_day"] / result["estimated_adult_bodyweight_kg"]
+    result["estimate_status"] = result["protein_supply_g_kg_day"].notna().map(
+        {True: "preliminary_adult_proxy", False: "protein_supply_only"}
+    )
+
+    result = result.sort_values(["Entity", "Year"]).reset_index(drop=True)
+    numeric_columns = result.select_dtypes(include="number").columns
+    result[numeric_columns] = result[numeric_columns].replace([math.inf, -math.inf], pd.NA)
+    validate(result)
+
+    csv_path = args.output_dir / "protein_bodyweight_country_year.csv"
+    json_path = args.output_dir / "protein_bodyweight_country_year.json"
+    result.to_csv(csv_path, index=False)
+
+    normalized = result.astype(object).where(pd.notna(result), None)
+    payload = {
+        "metadata": {
+            "title": "Protein supply per estimated adult bodyweight by country",
+            "version": "0.1.0-preview",
+            "generated_by": "scripts/build_dataset.py",
+            "representative_adult_age": REPRESENTATIVE_ADULT_AGE,
+            "method": "Sex-specific age-standardized BMI multiplied by sex-specific representative-cohort height squared, averaged equally across sexes.",
+            "warning": "This is an ecological adult proxy, not individual protein intake and not an all-age population bodyweight estimate.",
+            "sources": sources,
+        },
+        "records": normalized.to_dict(orient="records"),
+    }
+    json_path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False), encoding="utf-8")
+
+    coverage = result["protein_supply_g_kg_day"].notna()
+    print(f"Wrote {len(result):,} country-year records")
+    print(f"Normalized records: {coverage.sum():,}")
+    print(f"Countries with normalized data: {result.loc[coverage, 'Code'].nunique():,}")
+    print(f"Years with normalized data: {result.loc[coverage, 'Year'].min()}–{result.loc[coverage, 'Year'].max()}")
+
+
+if __name__ == "__main__":
+    main()
