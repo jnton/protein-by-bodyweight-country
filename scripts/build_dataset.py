@@ -88,7 +88,9 @@ def validate(frame: pd.DataFrame) -> None:
     if duplicates:
         raise ValueError(f"Found {duplicates} duplicate country-year rows")
 
-    derived = frame.dropna(subset=["protein_supply_g_day", "estimated_adult_bodyweight_kg", "protein_supply_g_kg_day"])
+    derived = frame.dropna(
+        subset=["protein_supply_g_day", "estimated_adult_bodyweight_kg", "protein_supply_g_kg_day"]
+    )
     if derived.empty:
         raise ValueError("No normalized records were generated")
 
@@ -99,13 +101,82 @@ def validate(frame: pd.DataFrame) -> None:
 
     weight = derived["estimated_adult_bodyweight_kg"]
     if not weight.between(30, 160).all():
-        bad = derived.loc[~weight.between(30, 160), ["Entity", "Year", "estimated_adult_bodyweight_kg"]]
+        bad = derived.loc[
+            ~weight.between(30, 160), ["Entity", "Year", "estimated_adult_bodyweight_kg"]
+        ]
         raise ValueError(f"Implausible bodyweight estimates:\n{bad.head()}")
 
     ratio = derived["protein_supply_g_kg_day"]
     if not ratio.between(0.2, 5.0).all():
-        bad = derived.loc[~ratio.between(0.2, 5.0), ["Entity", "Year", "protein_supply_g_kg_day"]]
+        bad = derived.loc[
+            ~ratio.between(0.2, 5.0), ["Entity", "Year", "protein_supply_g_kg_day"]
+        ]
         raise ValueError(f"Implausible protein ratios:\n{bad.head()}")
+
+
+def web_number(value: object, digits: int) -> float | None:
+    if value is None or pd.isna(value):
+        return None
+    return round(float(value), digits)
+
+
+def write_web_payload(result: pd.DataFrame, metadata: dict[str, object], output_dir: Path) -> Path:
+    """Write a compact column-oriented payload for the browser explorer.
+
+    Country names and ISO codes are stored once. Each observation is encoded as:
+    [country_index, year, protein_g_day, bodyweight_kg, protein_g_kg_day, status].
+    status is 1 for a normalized preliminary estimate and 0 for supply-only data.
+    """
+
+    latest_names = (
+        result.sort_values("Year")
+        .drop_duplicates("Code", keep="last")[["Code", "Entity"]]
+        .sort_values(["Entity", "Code"])
+        .reset_index(drop=True)
+    )
+    countries = latest_names[["Code", "Entity"]].values.tolist()
+    country_index = {code: index for index, (code, _name) in enumerate(countries)}
+
+    rows = [
+        [
+            country_index[row.Code],
+            int(row.Year),
+            web_number(row.protein_supply_g_day, 3),
+            web_number(row.estimated_adult_bodyweight_kg, 3),
+            web_number(row.protein_supply_g_kg_day, 5),
+            1 if row.estimate_status == "preliminary_adult_proxy" else 0,
+        ]
+        for row in result.itertuples(index=False)
+    ]
+
+    normalized = result["protein_supply_g_kg_day"].notna()
+    web_payload = {
+        "metadata": {
+            **metadata,
+            "schema": {
+                "countries": "[ISO3 code, display name]",
+                "rows": "[country index, year, protein g/person/day, estimated adult kg, protein g/kg/day, normalized status]",
+            },
+            "coverage": {
+                "records": int(len(result)),
+                "normalized_records": int(normalized.sum()),
+                "normalized_countries": int(result.loc[normalized, "Code"].nunique()),
+                "protein_year_min": int(result["Year"].min()),
+                "protein_year_max": int(result["Year"].max()),
+                "normalized_year_min": int(result.loc[normalized, "Year"].min()),
+                "normalized_year_max": int(result.loc[normalized, "Year"].max()),
+            },
+        },
+        "countries": countries,
+        "rows": rows,
+    }
+
+    path = output_dir / "explorer.json"
+    path.write_text(
+        json.dumps(web_payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False),
+        encoding="utf-8",
+    )
+    return path
 
 
 def main() -> None:
@@ -123,8 +194,12 @@ def main() -> None:
     bmi["birth_cohort"] = bmi["Year"].astype(int) - REPRESENTATIVE_ADULT_AGE
 
     height_years = bmi["birth_cohort"].unique().tolist()
-    male_height = interpolate_height(height_male, height_years, "height_male_cm").rename(columns={"Year": "birth_cohort"})
-    female_height = interpolate_height(height_female, height_years, "height_female_cm").rename(columns={"Year": "birth_cohort"})
+    male_height = interpolate_height(height_male, height_years, "height_male_cm").rename(
+        columns={"Year": "birth_cohort"}
+    )
+    female_height = interpolate_height(height_female, height_years, "height_female_cm").rename(
+        columns={"Year": "birth_cohort"}
+    )
 
     anthropometry = bmi.merge(
         male_height.drop(columns=["Entity"]), on=["Code", "birth_cohort"], how="left"
@@ -132,8 +207,12 @@ def main() -> None:
         female_height.drop(columns=["Entity"]), on=["Code", "birth_cohort"], how="left"
     )
 
-    anthropometry["estimated_male_weight_kg"] = anthropometry["bmi_male"] * (anthropometry["height_male_cm"] / 100) ** 2
-    anthropometry["estimated_female_weight_kg"] = anthropometry["bmi_female"] * (anthropometry["height_female_cm"] / 100) ** 2
+    anthropometry["estimated_male_weight_kg"] = anthropometry["bmi_male"] * (
+        anthropometry["height_male_cm"] / 100
+    ) ** 2
+    anthropometry["estimated_female_weight_kg"] = anthropometry["bmi_female"] * (
+        anthropometry["height_female_cm"] / 100
+    ) ** 2
     anthropometry["estimated_adult_bodyweight_kg"] = (
         anthropometry["estimated_male_weight_kg"] + anthropometry["estimated_female_weight_kg"]
     ) / 2
@@ -156,7 +235,9 @@ def main() -> None:
         ]
     ]
     result = protein.merge(keep, on=["Code", "Year"], how="left")
-    result["protein_supply_g_kg_day"] = result["protein_supply_g_day"] / result["estimated_adult_bodyweight_kg"]
+    result["protein_supply_g_kg_day"] = (
+        result["protein_supply_g_day"] / result["estimated_adult_bodyweight_kg"]
+    )
     result["estimate_status"] = result["protein_supply_g_kg_day"].notna().map(
         {True: "preliminary_adult_proxy", False: "protein_supply_only"}
     )
@@ -166,30 +247,37 @@ def main() -> None:
     result[numeric_columns] = result[numeric_columns].replace([math.inf, -math.inf], pd.NA)
     validate(result)
 
+    metadata: dict[str, object] = {
+        "title": "Protein supply per estimated adult bodyweight by country",
+        "version": "0.1.1-preview",
+        "generated_by": "scripts/build_dataset.py",
+        "representative_adult_age": REPRESENTATIVE_ADULT_AGE,
+        "method": "Sex-specific age-standardized BMI multiplied by sex-specific representative-cohort height squared, averaged equally across sexes.",
+        "warning": "This is an ecological adult proxy, not individual protein intake and not an all-age population bodyweight estimate.",
+        "sources": sources,
+    }
+
     csv_path = args.output_dir / "protein_bodyweight_country_year.csv"
     json_path = args.output_dir / "protein_bodyweight_country_year.json"
     result.to_csv(csv_path, index=False)
 
-    normalized = result.astype(object).where(pd.notna(result), None)
-    payload = {
-        "metadata": {
-            "title": "Protein supply per estimated adult bodyweight by country",
-            "version": "0.1.0-preview",
-            "generated_by": "scripts/build_dataset.py",
-            "representative_adult_age": REPRESENTATIVE_ADULT_AGE,
-            "method": "Sex-specific age-standardized BMI multiplied by sex-specific representative-cohort height squared, averaged equally across sexes.",
-            "warning": "This is an ecological adult proxy, not individual protein intake and not an all-age population bodyweight estimate.",
-            "sources": sources,
-        },
-        "records": normalized.to_dict(orient="records"),
-    }
-    json_path.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False), encoding="utf-8")
+    normalized_result = result.astype(object).where(pd.notna(result), None)
+    full_payload = {"metadata": metadata, "records": normalized_result.to_dict(orient="records")}
+    json_path.write_text(
+        json.dumps(full_payload, ensure_ascii=False, separators=(",", ":"), allow_nan=False),
+        encoding="utf-8",
+    )
+    explorer_path = write_web_payload(result, metadata, args.output_dir)
 
     coverage = result["protein_supply_g_kg_day"].notna()
     print(f"Wrote {len(result):,} country-year records")
     print(f"Normalized records: {coverage.sum():,}")
     print(f"Countries with normalized data: {result.loc[coverage, 'Code'].nunique():,}")
-    print(f"Years with normalized data: {result.loc[coverage, 'Year'].min()}–{result.loc[coverage, 'Year'].max()}")
+    print(
+        f"Years with normalized data: {result.loc[coverage, 'Year'].min()}–"
+        f"{result.loc[coverage, 'Year'].max()}"
+    )
+    print(f"Browser payload: {explorer_path.stat().st_size / 1024:.0f} KiB")
 
 
 if __name__ == "__main__":
