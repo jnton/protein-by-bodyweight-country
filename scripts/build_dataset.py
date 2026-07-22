@@ -22,7 +22,8 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "config" / "sources.json"
 REPRESENTATIVE_ADULT_AGE = 40
-USER_AGENT = "protein-by-bodyweight-country/0.1 (+https://github.com/jnton/protein-by-bodyweight-country)"
+VERSION = "0.2.0-preview"
+USER_AGENT = f"protein-by-bodyweight-country/{VERSION} (+https://github.com/jnton/protein-by-bodyweight-country)"
 
 
 def parse_args() -> argparse.Namespace:
@@ -249,7 +250,7 @@ def main() -> None:
 
     metadata: dict[str, object] = {
         "title": "Protein supply per estimated adult bodyweight by country",
-        "version": "0.1.1-preview",
+        "version": VERSION,
         "generated_by": "scripts/build_dataset.py",
         "representative_adult_age": REPRESENTATIVE_ADULT_AGE,
         "method": "Sex-specific age-standardized BMI multiplied by sex-specific representative-cohort height squared, averaged equally across sexes.",

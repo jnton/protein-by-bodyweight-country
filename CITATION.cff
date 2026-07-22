@@ -8,12 +8,13 @@ authors:
 repository-code: "https://github.com/jnton/protein-by-bodyweight-country"
 url: "https://jnton.github.io/protein-by-bodyweight-country/"
 license: AGPL-3.0-or-later
-version: 0.1.1-preview
+version: 0.2.0-preview
 date-released: 2026-07-22
-abstract: "A reproducible interactive explorer of national protein supply relative to estimated bodyweight, with an extensible demographic research pipeline."
+abstract: "A reproducible interactive explorer of national protein supply relative to estimated bodyweight, with searchable country comparisons, evidence-based benchmark overlays, and an extensible demographic research pipeline."
 keywords:
   - protein supply
   - bodyweight
   - nutrition
   - data visualization
   - public health
+  - sports nutrition

@@ -6,7 +6,7 @@
 
 An interactive, reproducible explorer of national protein supply relative to estimated bodyweight.
 
-**Planned live explorer:** `https://jnton.github.io/protein-by-bodyweight-country/`
+**Live explorer:** https://jnton.github.io/protein-by-bodyweight-country/
 
 ## Why this exists
 
@@ -30,16 +30,21 @@ protein supply (g/person/day) ÷ estimated adult bodyweight (kg)
 
 This is an ecological adult proxy, not an individual dietary recommendation and not yet the final all-age population denominator.
 
-## Explorer features
+## Graph-studio features
 
-- responsive global choropleth;
-- year and indicator controls;
-- country ranking;
-- up to eight-country time-series comparison;
-- protein/bodyweight relationship plot;
-- dark mode;
-- downloadable CSV;
+- searchable country picker using names or ISO-3 codes;
+- click a country on the map or ranking to add it to the trend graph;
+- removable country chips and curated presets;
+- comparison of up to 12 countries;
+- shareable URLs that preserve indicator, year, countries, benchmarks, weight, and body-fat assumptions;
+- current U.S., DRI, exercise, older-adult, resistance-training, and hypocaloric benchmark overlays;
+- explicit conversion of fat-free-mass recommendations to bodyweight equivalents;
+- selected-year comparison table;
+- responsive choropleth, trend, ranking, and relationship charts;
+- dark mode and downloadable CSV;
 - visible methodological warnings and source provenance.
+
+Benchmark overlays are contextual only. The plotted country series is food supply divided by a modelled bodyweight proxy, not observed individual intake. See [benchmark definitions and caveats](docs/BENCHMARKS.md).
 
 ## Run locally
 
@@ -72,7 +77,7 @@ The production model will add:
 - national and subnational dietary-survey modules;
 - regional aggregates calculated from population-weighted totals.
 
-See [methodology](docs/METHODOLOGY.md), [research roadmap](docs/RESEARCH_ROADMAP.md), and [tracked data requests](docs/DATA_REQUESTS.md).
+See [methodology](docs/METHODOLOGY.md), [benchmark documentation](docs/BENCHMARKS.md), [research roadmap](docs/RESEARCH_ROADMAP.md), and [tracked data requests](docs/DATA_REQUESTS.md).
 
 ## Publication strategy
 
