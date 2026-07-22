@@ -51,24 +51,28 @@ jobs:
           set -euo pipefail
           base="https://jnton.github.io/protein-by-bodyweight-country"
           curl --fail --silent --show-error --location \
-            --retry 6 --retry-delay 5 --retry-all-errors \
+            --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/" --output /tmp/live-index.html
           curl --fail --silent --show-error --location \
-            --retry 6 --retry-delay 5 --retry-all-errors \
+            --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/data/explorer.json" --output /tmp/live-explorer.json
           curl --fail --silent --show-error --location \
-            --retry 6 --retry-delay 5 --retry-all-errors \
+            --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/vendor/plotly-geo-3.5.1.min.js" --output /tmp/live-plotly.js
           grep -q 'id="dashboard-shell"' /tmp/live-index.html
+          grep -q 'id="country-search"' /tmp/live-index.html
+          grep -q 'id="benchmark-toggles"' /tmp/live-index.html
+          grep -q 'id="comparison-body"' /tmp/live-index.html
           test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
           python - <<'PY'
           import json
           from pathlib import Path
 
           payload = json.loads(Path("/tmp/live-explorer.json").read_text(encoding="utf-8"))
+          assert payload["metadata"]["version"] == "0.2.0-preview"
           assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
           print(
-              "Current public site version:",
+              "Current public graph studio verified:",
               payload["metadata"]["version"],
               f"with {len(payload['rows']):,} validated rows",
           )
