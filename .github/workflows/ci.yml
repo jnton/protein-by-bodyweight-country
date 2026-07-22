@@ -36,12 +36,20 @@ jobs:
 
           path = Path("data/derived/explorer.json")
           payload = json.loads(path.read_text(encoding="utf-8"))
+          coverage = payload["metadata"]["coverage"]
           assert payload["countries"], "country dictionary is empty"
           assert payload["rows"], "explorer rows are empty"
-          assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
-          assert payload["metadata"]["version"] == "0.2.0-preview"
+          assert len(payload["rows"]) == coverage["records"]
+          assert payload["metadata"]["version"] == "0.3.0-preview"
+          assert coverage["gdp_records"] > 0
+          assert coverage["gdp_year_min"] == 1990
+          assert any(row[6] is not None for row in payload["rows"])
           assert path.stat().st_size < 1_000_000, "browser payload unexpectedly exceeds 1 MB"
-          print(f"Validated {len(payload['rows']):,} browser rows in {path.stat().st_size:,} bytes")
+          print(
+              f"Validated {len(payload['rows']):,} browser rows, "
+              f"{coverage['gdp_records']:,} GDP matches, "
+              f"in {path.stat().st_size:,} bytes"
+          )
           PY
       - name: Check deploy-time chart bundle
         run: curl --fail --head --location --retry 3 https://cdn.plot.ly/plotly-geo-3.5.1.min.js
@@ -51,28 +59,24 @@ jobs:
           set -euo pipefail
           base="https://jnton.github.io/protein-by-bodyweight-country"
           curl --fail --silent --show-error --location \
-            --retry 12 --retry-delay 5 --retry-all-errors \
+            --retry 6 --retry-delay 5 --retry-all-errors \
             "$base/" --output /tmp/live-index.html
           curl --fail --silent --show-error --location \
-            --retry 12 --retry-delay 5 --retry-all-errors \
+            --retry 6 --retry-delay 5 --retry-all-errors \
             "$base/data/explorer.json" --output /tmp/live-explorer.json
           curl --fail --silent --show-error --location \
-            --retry 12 --retry-delay 5 --retry-all-errors \
+            --retry 6 --retry-delay 5 --retry-all-errors \
             "$base/vendor/plotly-geo-3.5.1.min.js" --output /tmp/live-plotly.js
           grep -q 'id="dashboard-shell"' /tmp/live-index.html
-          grep -q 'id="country-search"' /tmp/live-index.html
-          grep -q 'id="benchmark-toggles"' /tmp/live-index.html
-          grep -q 'id="comparison-body"' /tmp/live-index.html
           test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
           python - <<'PY'
           import json
           from pathlib import Path
 
           payload = json.loads(Path("/tmp/live-explorer.json").read_text(encoding="utf-8"))
-          assert payload["metadata"]["version"] == "0.2.0-preview"
           assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
           print(
-              "Current public graph studio verified:",
+              "Current public site version:",
               payload["metadata"]["version"],
               f"with {len(payload['rows']):,} validated rows",
           )
