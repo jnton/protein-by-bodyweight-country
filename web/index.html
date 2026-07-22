@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore national protein supply relative to estimated adult bodyweight across countries and time.">
+  <title>Protein / kg — Country Explorer</title>
+  <link rel="preconnect" href="https://cdn.plot.ly">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Protein per kilogram home">
+      <span class="brand-mark">P/kg</span>
+      <span>Protein by bodyweight</span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#explorer">Explorer</a>
+      <a href="#method">Method</a>
+      <a href="https://github.com/jnton/protein-by-bodyweight-country">GitHub</a>
+      <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle color theme">◐</button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">A reproducible global data project</p>
+        <h1>Protein supply,<br><em>scaled to bodies.</em></h1>
+        <p class="lede">A country-by-country view of daily protein supply relative to estimated adult bodyweight—built transparently from open international datasets.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#explorer">Explore the map</a>
+          <a class="button secondary" href="./data/protein_bodyweight_country_year.csv" download>Download CSV</a>
+        </div>
+      </div>
+      <div class="formula-card" aria-label="Metric formula">
+        <div class="formula-label">Core indicator</div>
+        <div class="formula">
+          <span>protein supply</span>
+          <span class="fraction-line"></span>
+          <span>estimated bodyweight</span>
+        </div>
+        <div class="formula-result">= grams per kilogram per day</div>
+        <p>Ecological national indicator. Not an individual dietary recommendation.</p>
+      </div>
+    </section>
+
+    <section class="status-strip" aria-label="Dataset summary">
+      <article><strong id="country-count">—</strong><span>countries</span></article>
+      <article><strong id="year-range">—</strong><span>normalized years</span></article>
+      <article><strong id="record-count">—</strong><span>country-year records</span></article>
+      <article><strong>Open</strong><span>methods and code</span></article>
+    </section>
+
+    <section id="explorer" class="section explorer-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Interactive explorer</p>
+          <h2>How does the world compare?</h2>
+        </div>
+        <p id="data-warning" class="warning-pill">Preliminary adult proxy</p>
+      </div>
+
+      <div class="control-panel">
+        <label>
+          Indicator
+          <select id="metric-select">
+            <option value="protein_supply_g_kg_day">Protein supply per kg</option>
+            <option value="protein_supply_g_day">Protein supply per person</option>
+            <option value="estimated_adult_bodyweight_kg">Estimated adult bodyweight</option>
+          </select>
+        </label>
+        <label class="year-control">
+          Year <output id="year-output">2016</output>
+          <input id="year-slider" type="range" min="1975" max="2016" value="2016" step="1">
+        </label>
+        <label>
+          Compare countries
+          <select id="country-select" multiple size="5" aria-label="Select countries to compare"></select>
+        </label>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="panel map-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">World map</span>
+              <h3 id="map-title">Protein supply per kg, 2016</h3>
+            </div>
+            <span id="map-coverage" class="small-stat">— countries</span>
+          </div>
+          <div id="map-chart" class="chart large-chart" role="img" aria-label="World choropleth map"></div>
+        </article>
+
+        <article class="panel ranking-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">Ranking</span>
+              <h3>Highest values</h3>
+            </div>
+          </div>
+          <ol id="ranking-list" class="ranking-list"></ol>
+        </article>
+
+        <article class="panel trend-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">Time series</span>
+              <h3 id="trend-title">Selected countries</h3>
+            </div>
+          </div>
+          <div id="trend-chart" class="chart" role="img" aria-label="Country comparison time series"></div>
+        </article>
+
+        <article class="panel relationship-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">Relationship</span>
+              <h3>Protein supply vs. bodyweight</h3>
+            </div>
+          </div>
+          <div id="scatter-chart" class="chart" role="img" aria-label="Protein supply and estimated bodyweight scatter plot"></div>
+        </article>
+      </div>
+    </section>
+
+    <section id="method" class="section method-section">
+      <div class="section-heading narrow">
+        <div>
+          <p class="eyebrow">Built to be challenged</p>
+          <h2>The assumptions stay visible.</h2>
+        </div>
+      </div>
+      <div class="method-grid">
+        <article>
+          <span>01</span>
+          <h3>Protein is supply</h3>
+          <p>FAOSTAT reports food available at the end of the supply chain. It is not a direct survey of what each person consumed.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Weight is estimated</h3>
+          <p>The preview derives an adult proxy from sex-specific BMI and representative-cohort height. The next model will use age-sex population weights.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Uncertainty is a feature</h3>
+          <p>Every future demographic layer will retain source, method, interpolation status, and uncertainty rather than collapsing them into false precision.</p>
+        </article>
+      </div>
+      <div class="method-cta">
+        <p>Read the full methodology, limitations, and planned demographic model in the repository.</p>
+        <a class="button secondary" href="https://github.com/jnton/protein-by-bodyweight-country/blob/main/docs/METHODOLOGY.md">Read methodology</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Created by Mario Marcolongo. Code: AGPL-3.0. Original visual and editorial content: CC BY-SA 4.0.</p>
+    <p>Source data retain their original licences and attribution requirements.</p>
+  </footer>
+
+  <div id="error-state" class="error-state" hidden>
+    <strong>Dataset unavailable.</strong>
+    <span>Run <code>make data</code> before serving the site.</span>
+  </div>
+</body>
+</html>
