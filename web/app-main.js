@@ -85,6 +85,12 @@ function wireEvents() {
     return true;
   };
 
+  el("country-search").addEventListener("input", () => {
+    const input = el("country-search");
+    if (resolveCountryQuery(input.value, {allowPrefix: false})) {
+      selectFromSearch({allowPrefix: false});
+    }
+  });
   el("country-search").addEventListener("change", () => {
     selectFromSearch({allowPrefix: false});
   });
