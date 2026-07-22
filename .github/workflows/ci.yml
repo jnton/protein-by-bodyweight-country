@@ -19,10 +19,11 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Check source syntax
+      - name: Check source syntax and browser contract
         run: |
-          python -m py_compile scripts/build_dataset.py
+          python -m py_compile scripts/build_dataset.py scripts/check_web_contract.py
           node --check web/app.js
+          python scripts/check_web_contract.py
       - run: python scripts/build_dataset.py
       - name: Check generated outputs
         run: |
@@ -38,6 +39,7 @@ jobs:
           assert payload["countries"], "country dictionary is empty"
           assert payload["rows"], "explorer rows are empty"
           assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
+          assert payload["metadata"]["version"] == "0.2.0-preview"
           assert path.stat().st_size < 1_000_000, "browser payload unexpectedly exceeds 1 MB"
           print(f"Validated {len(payload['rows']):,} browser rows in {path.stat().st_size:,} bytes")
           PY
@@ -64,9 +66,12 @@ jobs:
           from pathlib import Path
 
           payload = json.loads(Path("/tmp/live-explorer.json").read_text(encoding="utf-8"))
-          assert payload["metadata"]["version"] == "0.1.1-preview"
           assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
-          print(f"Current public site serves {len(payload['rows']):,} validated rows")
+          print(
+              "Current public site version:",
+              payload["metadata"]["version"],
+              f"with {len(payload['rows']):,} validated rows",
+          )
           PY
       - uses: actions/upload-artifact@v4
         with:
