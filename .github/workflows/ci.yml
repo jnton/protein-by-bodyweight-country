@@ -61,26 +61,47 @@ jobs:
           set -euo pipefail
           base="https://jnton.github.io/protein-by-bodyweight-country"
           curl --fail --silent --show-error --location \
-            --retry 6 --retry-delay 5 --retry-all-errors \
+            --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/" --output /tmp/live-index.html
           curl --fail --silent --show-error --location \
-            --retry 6 --retry-delay 5 --retry-all-errors \
+            --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/data/explorer.json" --output /tmp/live-explorer.json
           curl --fail --silent --show-error --location \
-            --retry 6 --retry-delay 5 --retry-all-errors \
+            --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/vendor/plotly-geo-3.5.1.min.js" --output /tmp/live-plotly.js
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/app-data.js" --output /tmp/live-app-data.js
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/app-charts.js" --output /tmp/live-app-charts.js
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/app-main.js" --output /tmp/live-app-main.js
           grep -q 'id="dashboard-shell"' /tmp/live-index.html
+          grep -q 'id="country-search"' /tmp/live-index.html
+          grep -q 'id="benchmark-select"' /tmp/live-index.html
+          grep -q 'id="gdp-chart"' /tmp/live-index.html
+          grep -q 'No add button needed' /tmp/live-index.html
+          grep -q 'function renderGdpScatter' /tmp/live-app-charts.js
+          grep -q 'country-search.*addEventListener("input"' /tmp/live-app-main.js
           test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
           python - <<'PY'
           import json
           from pathlib import Path
 
           payload = json.loads(Path("/tmp/live-explorer.json").read_text(encoding="utf-8"))
-          assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
+          coverage = payload["metadata"]["coverage"]
+          assert payload["metadata"]["version"] == "0.3.0-preview"
+          assert len(payload["rows"]) == coverage["records"]
+          assert coverage["gdp_records"] == 5637
+          assert coverage["gdp_countries"] == 183
+          assert any(row[6] is not None for row in payload["rows"])
           print(
-              "Current public site version:",
-              payload["metadata"]["version"],
-              f"with {len(payload['rows']):,} validated rows",
+              "Live v0.3 explorer verified:",
+              f"{len(payload['rows']):,} rows,",
+              f"{coverage['gdp_records']:,} GDP matches across",
+              f"{coverage['gdp_countries']} countries",
           )
           PY
       - uses: actions/upload-artifact@v4
