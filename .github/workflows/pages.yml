@@ -27,7 +27,9 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Validate browser contract
         run: |
-          node --check web/app.js
+          node --check web/app-data.js
+          node --check web/app-charts.js
+          node --check web/app-main.js
           python scripts/check_web_contract.py
       - run: python scripts/build_dataset.py --output-dir dist/data
       - name: Assemble static site
@@ -76,7 +78,12 @@ jobs:
 
           grep -q 'id="dashboard-shell"' /tmp/index.html
           grep -q 'id="country-search"' /tmp/index.html
-          grep -q 'id="benchmark-toggles"' /tmp/index.html
+          grep -q 'id="benchmark-select"' /tmp/index.html
+          grep -q 'id="gdp-chart"' /tmp/index.html
+          grep -q 'id="comparison-body"' /tmp/index.html
+          grep -q 'app-data.js' /tmp/index.html
+          grep -q 'app-charts.js' /tmp/index.html
+          grep -q 'app-main.js' /tmp/index.html
           test "$(wc -c < /tmp/plotly.js)" -gt 100000
 
           python - <<'PY'
@@ -84,12 +91,16 @@ jobs:
           from pathlib import Path
 
           payload = json.loads(Path("/tmp/explorer.json").read_text(encoding="utf-8"))
-          assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
-          assert payload["metadata"]["version"] == "0.2.0-preview"
+          coverage = payload["metadata"]["coverage"]
+          assert len(payload["rows"]) == coverage["records"]
+          assert payload["metadata"]["version"] == "0.3.0-preview"
+          assert coverage["gdp_records"] > 0
+          assert any(row[6] is not None for row in payload["rows"])
           print(
               "Live deployment verified:",
               f"{len(payload['countries'])} country entities,",
               f"{len(payload['rows']):,} country-year rows,",
+              f"{coverage['gdp_records']:,} GDP matches,",
               payload["metadata"]["version"],
           )
           PY

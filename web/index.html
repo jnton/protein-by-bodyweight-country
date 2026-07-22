@@ -3,12 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore national protein supply relative to estimated bodyweight, compare countries, and overlay evidence-based protein benchmarks.">
-  <meta name="theme-color" content="#f4f0e7">
-  <title>Protein / kg — Global Explorer</title>
+  <meta name="description" content="Explore national protein supply relative to estimated adult bodyweight, nutritional reference ranges, and GDP per capita.">
+  <meta name="theme-color" content="#f5f1e8">
+  <title>Protein / kg — Country Explorer</title>
   <link rel="stylesheet" href="./styles.css">
   <script src="./vendor/plotly-geo-3.5.1.min.js" charset="utf-8" defer></script>
-  <script src="./app.js" defer></script>
+  <script src="./app-data.js" defer></script>
+  <script src="./app-charts.js" defer></script>
+  <script src="./app-main.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#explorer">Skip to explorer</a>
@@ -20,7 +22,7 @@
     </a>
     <nav aria-label="Primary navigation">
       <a href="#explorer">Explorer</a>
-      <a href="#benchmarks-about">Benchmarks</a>
+      <a href="#benchmarks">Benchmarks</a>
       <a href="#method">Method</a>
       <a href="#sources">Sources</a>
       <a href="https://github.com/jnton/protein-by-bodyweight-country">GitHub</a>
@@ -33,9 +35,9 @@
       <div class="hero-copy">
         <p class="eyebrow">A reproducible global data project</p>
         <h1>Protein supply,<br><em>scaled to bodies.</em></h1>
-        <p class="lede">Explore national protein supply, build your own country comparison, and place the trends beside current public-health and sports-nutrition benchmarks.</p>
+        <p class="lede">Compare countries across time, place the ecological indicator beside one clearly selected protein reference, and explore its relationship with GDP per capita.</p>
         <div class="hero-actions">
-          <a class="button primary" href="#explorer">Open graph studio</a>
+          <a class="button primary" href="#explorer">Open the explorer</a>
           <a class="button secondary" href="./data/protein_bodyweight_country_year.csv" download>Download CSV</a>
         </div>
       </div>
@@ -47,7 +49,7 @@
           <span>estimated bodyweight</span>
         </div>
         <div class="formula-result">= grams per kilogram per day</div>
-        <p>National food-system availability divided by a modelled adult bodyweight proxy. It is not observed individual intake.</p>
+        <p>Ecological national indicator. Not an individual dietary prescription.</p>
       </div>
     </section>
 
@@ -61,8 +63,8 @@
     <section id="explorer" class="section explorer-section">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Interactive graph studio</p>
-          <h2>Build the comparison you actually want.</h2>
+          <p class="eyebrow">Interactive explorer</p>
+          <h2>A quieter way to compare.</h2>
         </div>
         <p id="data-warning" class="warning-pill" aria-live="polite">Preliminary adult bodyweight proxy</p>
       </div>
@@ -76,186 +78,168 @@
       </div>
 
       <div id="dashboard-shell" hidden>
-        <div class="studio-layout">
-          <aside class="studio-sidebar" aria-label="Graph controls">
-            <section class="control-card">
-              <div class="control-card-heading">
-                <span class="step-badge">1</span>
-                <div>
-                  <h3>Choose the measure</h3>
-                  <p>Change what the map and charts display.</p>
-                </div>
-              </div>
-              <label class="field-label" for="metric-select">Indicator</label>
+        <section class="studio-toolbar" aria-label="Graph controls">
+          <div class="toolbar-grid">
+            <label class="control-field" for="metric-select">
+              <span>Indicator</span>
               <select id="metric-select">
                 <option value="protein_supply_g_kg_day">Protein supply per kg</option>
                 <option value="protein_supply_g_day">Protein supply per person</option>
                 <option value="estimated_adult_bodyweight_kg">Estimated adult bodyweight</option>
               </select>
-              <label class="year-control" for="year-slider">
-                <span>Year <output id="year-output">2016</output></span>
-                <input id="year-slider" type="range" min="1975" max="2016" value="2016" step="1">
-                <small>Available: <span id="year-range-hint">1975–2016</span></small>
-              </label>
-            </section>
+            </label>
 
-            <section class="control-card country-builder">
-              <div class="control-card-heading">
-                <span class="step-badge">2</span>
-                <div>
-                  <h3>Build a country set</h3>
-                  <p>Search, click the map, or use a preset.</p>
-                </div>
-              </div>
-              <div class="search-row">
-                <label class="sr-only" for="country-search">Search for a country</label>
-                <input id="country-search" type="search" list="country-options" autocomplete="off" placeholder="Type Italy, ITA, Japan…">
-                <datalist id="country-options"></datalist>
-                <button id="add-country" class="compact-button" type="button">Add</button>
-              </div>
-              <p id="country-feedback" class="field-feedback" aria-live="polite"></p>
-              <div class="preset-row" aria-label="Country presets">
+            <label class="control-field year-control" for="year-slider">
+              <span>Year <output id="year-output">2016</output></span>
+              <input id="year-slider" type="range" min="1975" max="2016" value="2016" step="1">
+              <small>Available <span id="year-range-hint">1975–2016</span></small>
+            </label>
+
+            <label class="control-field country-search-field" for="country-search">
+              <span>Compare countries <small id="selection-count">0/10</small></span>
+              <input id="country-search" type="search" list="country-options" autocomplete="off" placeholder="Type Italy, ITA, Japan…">
+              <datalist id="country-options"></datalist>
+              <small>Choose a suggestion or press Enter. No add button needed.</small>
+              <span id="country-feedback" class="field-feedback" aria-live="polite"></span>
+            </label>
+
+            <label id="benchmark-control" class="control-field" for="benchmark-select" data-disabled="false">
+              <span>Protein reference</span>
+              <select id="benchmark-select"></select>
+              <small>One reference at a time keeps the trend readable.</small>
+            </label>
+          </div>
+
+          <div class="toolbar-lower">
+            <div class="country-selection">
+              <div class="selection-actions">
                 <button type="button" class="preset-button" data-preset="global">Global sample</button>
                 <button type="button" class="preset-button" data-preset="g7">G7</button>
-                <button type="button" class="preset-button" data-preset="europe">Europe sample</button>
+                <button type="button" class="preset-button" data-preset="europe">Europe</button>
                 <button id="clear-countries" type="button" class="preset-button subtle">Clear</button>
               </div>
-              <div class="selection-heading">
-                <span>Selected countries</span>
-                <small id="selection-count">0/12</small>
-              </div>
               <div id="selected-country-chips" class="country-chips" aria-live="polite"></div>
-              <small class="control-help">Tip: click any country on the map or in the ranking to add it.</small>
-            </section>
+            </div>
 
-            <section id="benchmark-controls" class="control-card benchmark-builder">
-              <div class="control-card-heading">
-                <span class="step-badge">3</span>
-                <div>
-                  <h3>Add reference bands</h3>
-                  <p>Compare the national proxy with clearly labelled benchmarks.</p>
-                </div>
-              </div>
-              <div id="benchmark-toggles" class="benchmark-toggles"></div>
-              <label class="field-label" for="primary-benchmark">Snapshot comparison</label>
-              <select id="primary-benchmark"></select>
-              <div class="personal-controls">
-                <label>
-                  Personal body weight
-                  <span class="input-with-unit"><input id="personal-weight" type="number" min="35" max="250" step="1" value="70"><span>kg</span></span>
-                </label>
-                <label>
-                  Body fat for FFM conversion
-                  <span><output id="body-fat-output">20%</output></span>
-                  <input id="body-fat" type="range" min="5" max="50" step="1" value="20">
-                </label>
-              </div>
-              <p id="ffm-conversion" class="conversion-note"></p>
-              <p class="context-warning">These overlays are contextual. Country values are food supply divided by a modelled denominator, not measurements of individual dietary adequacy.</p>
-            </section>
-
-            <div class="sidebar-actions">
-              <button id="share-view" class="button secondary full-width" type="button">Copy shareable view</button>
+            <div class="share-block">
+              <button id="share-view" class="button secondary compact" type="button">Copy view</button>
               <span id="share-feedback" class="field-feedback" aria-live="polite"></span>
             </div>
-          </aside>
-
-          <div class="studio-canvas">
-            <div class="dashboard-grid top-grid">
-              <article class="panel map-panel">
-                <div class="panel-heading">
-                  <div>
-                    <span class="panel-kicker">World map · click to compare</span>
-                    <h3 id="map-title">Protein supply per kg, 2016</h3>
-                  </div>
-                  <span id="map-coverage" class="small-stat">— countries</span>
-                </div>
-                <div id="map-chart" class="chart large-chart" role="img" aria-label="World choropleth map"></div>
-              </article>
-
-              <article class="panel ranking-panel">
-                <div class="panel-heading">
-                  <div>
-                    <span class="panel-kicker">Ranking · click to add</span>
-                    <h3>Highest values</h3>
-                  </div>
-                </div>
-                <ol id="ranking-list" class="ranking-list"></ol>
-              </article>
-            </div>
-
-            <article class="panel trend-panel emphasis-panel">
-              <div class="panel-heading trend-heading">
-                <div>
-                  <span class="panel-kicker">Time series + evidence bands</span>
-                  <h3 id="trend-title">Selected-country trends</h3>
-                </div>
-                <span id="trend-summary" class="small-stat"></span>
-              </div>
-              <div id="trend-chart" class="chart trend-chart" role="img" aria-label="Country comparison time series with protein benchmarks"></div>
-              <div id="benchmark-legend" class="benchmark-legend"></div>
-            </article>
-
-            <article class="panel comparison-panel">
-              <div class="panel-heading">
-                <div>
-                  <span class="panel-kicker">Selected-year snapshot</span>
-                  <h3 id="comparison-title">How selected countries compare</h3>
-                </div>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Country</th>
-                      <th id="comparison-value-heading">Value</th>
-                      <th>Reference</th>
-                      <th>Position</th>
-                      <th><span class="sr-only">Remove</span></th>
-                    </tr>
-                  </thead>
-                  <tbody id="comparison-body"></tbody>
-                </table>
-              </div>
-            </article>
-
-            <article class="panel relationship-panel">
-              <div class="panel-heading">
-                <div>
-                  <span class="panel-kicker">Relationship</span>
-                  <h3>Protein supply vs. bodyweight</h3>
-                </div>
-              </div>
-              <div id="scatter-chart" class="chart" role="img" aria-label="Protein supply and estimated bodyweight scatter plot"></div>
-            </article>
           </div>
+
+          <div class="benchmark-row">
+            <div id="benchmark-summary" class="benchmark-summary"></div>
+            <label class="inline-number">
+              <span>Daily equivalent at</span>
+              <span class="input-with-unit"><input id="personal-weight" type="number" min="35" max="250" step="1" value="70"><span>kg</span></span>
+            </label>
+            <label id="body-fat-wrap" class="body-fat-control" hidden>
+              <span>Body fat for FFM conversion <output id="body-fat-output">20%</output></span>
+              <input id="body-fat" type="range" min="5" max="50" step="1" value="20">
+            </label>
+          </div>
+        </section>
+
+        <div class="dashboard-grid top-grid">
+          <article class="panel map-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">World map · click to toggle</span>
+                <h3 id="map-title">Protein supply per kg, 2016</h3>
+              </div>
+              <span id="map-coverage" class="small-stat">— countries</span>
+            </div>
+            <div id="map-chart" class="chart large-chart" role="img" aria-label="World choropleth map"></div>
+          </article>
+
+          <article class="panel ranking-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">Ranking · click to toggle</span>
+                <h3>Highest values</h3>
+              </div>
+            </div>
+            <ol id="ranking-list" class="ranking-list"></ol>
+          </article>
+        </div>
+
+        <article class="panel trend-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="panel-kicker">Time series</span>
+              <h3 id="trend-title">Protein supply per kg over time</h3>
+            </div>
+            <span id="trend-summary" class="small-stat">—</span>
+          </div>
+          <div id="trend-chart" class="chart trend-chart" role="img" aria-label="Country comparison time series"></div>
+        </article>
+
+        <div class="dashboard-grid lower-grid">
+          <article class="panel gdp-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">Economic context · descriptive association</span>
+                <h3 id="gdp-title">Protein supply per kg vs GDP per capita</h3>
+              </div>
+              <span id="gdp-summary" class="small-stat">—</span>
+            </div>
+            <div id="gdp-chart" class="chart relationship-chart" role="img" aria-label="GDP per capita and protein indicator scatter plot"></div>
+            <p class="chart-note">GDP per capita uses purchasing-power parity and constant 2021 international dollars. The correlation is descriptive and does not imply causation.</p>
+          </article>
+
+          <article class="panel comparison-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">Selected-year snapshot</span>
+                <h3 id="comparison-title">2016 selected-country values</h3>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Country</th>
+                    <th id="comparison-value-heading">Value</th>
+                    <th>Reference</th>
+                    <th>Position</th>
+                    <th><span class="sr-only">Remove</span></th>
+                  </tr>
+                </thead>
+                <tbody id="comparison-body"></tbody>
+              </table>
+            </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <section id="benchmarks-about" class="section benchmark-section">
+    <section id="benchmarks" class="section benchmark-section">
       <div class="section-heading narrow">
         <div>
-          <p class="eyebrow">Interpret the overlays correctly</p>
-          <h2>Not every number answers the same question.</h2>
+          <p class="eyebrow">References without visual noise</p>
+          <h2>One context, two endpoints.</h2>
         </div>
       </div>
-      <div class="benchmark-explainer-grid">
+      <div class="method-grid">
         <article>
-          <span>Public health</span>
-          <h3>U.S. guidance now uses 1.2–1.6 g/kg/day</h3>
-          <p>The 2025–2030 Dietary Guidelines provide this serving goal while the older DRI RDA of 0.8 g/kg/day remains a separate adequacy reference.</p>
+          <span>01</span>
+          <h3>Minimum</h3>
+          <p>The lower endpoint of the selected recommendation is drawn as a thin dashed line.</p>
         </article>
         <article>
-          <span>Exercise</span>
-          <h3>1.4–2.0 g/kg/day for most exercising people</h3>
-          <p>The ISSN position stand frames this as sufficient for building and maintaining muscle in most exercising individuals.</p>
+          <span>02</span>
+          <h3>Upper end</h3>
+          <p>The upper endpoint is drawn separately. It is the top of that specific recommendation, not a universal safety maximum.</p>
         </article>
         <article>
-          <span>Energy restriction</span>
-          <h3>2.3–3.1 g/kg fat-free mass/day is specialized</h3>
-          <p>This range was developed for lean, resistance-trained people under hypocaloric conditions. The explorer converts it to a bodyweight equivalent using the body-fat setting.</p>
+          <span>03</span>
+          <h3>No universal protein upper intake level</h3>
+          <p>A general tolerable upper intake level has not been established, so the interface does not invent one.</p>
         </article>
+      </div>
+      <div class="method-cta">
+        <p>The hypocaloric athlete range remains explicitly based on fat-free mass and is converted only with a visible body-fat assumption.</p>
+        <a class="button secondary" href="https://github.com/jnton/protein-by-bodyweight-country/blob/main/docs/BENCHMARKS.md">Read benchmark notes</a>
       </div>
     </section>
 
@@ -279,12 +263,12 @@
         </article>
         <article>
           <span>03</span>
-          <h3>Benchmarks are contextual</h3>
-          <p>A country being above or below a band does not establish adequacy, deficiency, excess, or an individual recommendation.</p>
+          <h3>GDP is context</h3>
+          <p>The GDP plot adds economic context. Its cross-country correlation is descriptive, not a causal model.</p>
         </article>
       </div>
       <div class="method-cta">
-        <p>Read the full methodology, limitations, and planned demographic model in the repository.</p>
+        <p>Read the complete methodology, limitations, and planned demographic model.</p>
         <a class="button secondary" href="https://github.com/jnton/protein-by-bodyweight-country/blob/main/docs/METHODOLOGY.md">Read methodology</a>
       </div>
     </section>
@@ -298,34 +282,10 @@
       </div>
       <div class="source-grid">
         <article>
-          <span class="source-tag">Protein data</span>
+          <span class="source-tag">Protein</span>
           <h3>FAOSTAT via Our World in Data</h3>
-          <p>Annual per-capita protein supply, representing availability in the food system rather than observed individual consumption.</p>
+          <p>Annual per-capita protein supply. This represents availability in the food system rather than observed individual consumption.</p>
           <a href="https://ourworldindata.org/grapher/daily-per-capita-protein-supply#sources-and-processing">Source and processing →</a>
-        </article>
-        <article>
-          <span class="source-tag">Current U.S. guidance</span>
-          <h3>Dietary Guidelines for Americans, 2025–2030</h3>
-          <p>Official serving goal of 1.2–1.6 g/kg body weight/day.</p>
-          <a href="https://cdn.realfood.gov/DGA.pdf">Open official PDF →</a>
-        </article>
-        <article>
-          <span class="source-tag">Exercise</span>
-          <h3>ISSN protein and exercise position stand</h3>
-          <p>1.4–2.0 g/kg/day for most exercising individuals.</p>
-          <a href="https://doi.org/10.1186/s12970-017-0177-8">Open publication →</a>
-        </article>
-        <article>
-          <span class="source-tag">Resistance training</span>
-          <h3>Morton et al. meta-regression</h3>
-          <p>Breakpoint estimate at 1.62 g/kg/day, with a broad confidence interval and no further average FFM gains beyond the breakpoint.</p>
-          <a href="https://doi.org/10.1136/bjsports-2017-097608">Open publication →</a>
-        </article>
-        <article>
-          <span class="source-tag">Caloric restriction</span>
-          <h3>Helms et al. systematic review</h3>
-          <p>2.3–3.1 g/kg fat-free mass/day for lean, resistance-trained athletes during energy restriction.</p>
-          <a href="https://doi.org/10.1123/ijsnem.2013-0054">Open publication →</a>
         </article>
         <article>
           <span class="source-tag">Anthropometry</span>
@@ -333,13 +293,19 @@
           <p>Sex-specific BMI and adult-height estimates used to construct the preliminary adult bodyweight denominator.</p>
           <a href="https://github.com/jnton/protein-by-bodyweight-country/blob/main/config/sources.json">Machine-readable source registry →</a>
         </article>
+        <article>
+          <span class="source-tag">Economy</span>
+          <h3>World Bank World Development Indicators</h3>
+          <p>GDP per capita at purchasing-power parity in constant 2021 international dollars, matched by country and year.</p>
+          <a href="https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD">World Bank indicator →</a>
+        </article>
       </div>
     </section>
   </main>
 
   <footer>
     <p>Created by Mario Marcolongo. Code: AGPL-3.0. Original visual and editorial content: CC BY-SA 4.0.</p>
-    <p>Source data and publications retain their original licences and attribution requirements.</p>
+    <p>Source data retain their original licences and attribution requirements.</p>
   </footer>
 
   <div id="error-state" class="error-state" hidden role="alert">

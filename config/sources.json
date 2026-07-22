@@ -24,5 +24,13 @@
     "name": "Average height of adult women by birth cohort",
     "provider": "NCD-RisC via Our World in Data",
     "url": "https://ourworldindata.org/grapher/average-height-of-women.csv?v=1&csvType=full&useColumnShortNames=false"
+  },
+  "gdp_per_capita_ppp": {
+    "name": "GDP per capita, PPP (constant 2021 international $)",
+    "provider": "World Bank World Development Indicators",
+    "indicator": "NY.GDP.PCAP.PP.KD",
+    "url": "https://api.worldbank.org/v2/country/all/indicator/NY.GDP.PCAP.PP.KD?format=json&per_page=20000",
+    "metadata_url": "https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD",
+    "license": "CC BY 4.0"
   }
 }

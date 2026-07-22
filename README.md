@@ -10,7 +10,7 @@ An interactive, reproducible explorer of national protein supply relative to est
 
 ## Why this exists
 
-Protein availability is usually compared in grams per person per day. That hides a relevant ecological difference: populations vary in body size and demographic composition. This project builds a transparent country-year indicator in grams of protein per estimated kilogram of bodyweight, while keeping its assumptions and uncertainty visible.
+Protein availability is usually compared in grams per person per day. That hides a relevant ecological difference: populations vary in body size and demographic composition. This project builds a transparent country-year indicator in grams of protein supply per estimated kilogram of bodyweight, while keeping its assumptions visible.
 
 The project never treats national food supply as synonymous with individual consumption.
 
@@ -20,7 +20,8 @@ The preview combines:
 
 - FAOSTAT daily per-capita protein supply via Our World in Data;
 - sex-specific, age-standardized adult BMI;
-- sex-specific adult height by birth cohort.
+- sex-specific adult height by birth cohort;
+- World Bank GDP per capita at PPP in constant 2021 international dollars.
 
 It estimates an adult bodyweight proxy and calculates:
 
@@ -30,16 +31,19 @@ protein supply (g/person/day) ÷ estimated adult bodyweight (kg)
 
 This is an ecological adult proxy, not an individual dietary recommendation and not yet the final all-age population denominator.
 
-## Graph-studio features
+## Explorer features
 
-- searchable country picker using names or ISO-3 codes;
-- click a country on the map or ranking to add it to the trend graph;
-- removable country chips and curated presets;
-- comparison of up to 12 countries;
-- shareable URLs that preserve indicator, year, countries, benchmarks, weight, and body-fat assumptions;
-- current U.S., DRI, exercise, older-adult, resistance-training, and hypocaloric benchmark overlays;
-- explicit conversion of fat-free-mass recommendations to bodyweight equivalents;
+- compact full-width graph controls rather than a permanent sidebar;
+- country selection by typing a name/ISO code, pressing Enter, clicking the map, or clicking the ranking;
+- removable country chips and presets;
+- comparison of up to 10 countries;
+- one protein reference at a time, displayed as separate minimum and upper-end lines;
+- explicit note that no universal protein upper intake level has been established;
+- body-fat conversion for the FFM-based hypocaloric athlete range;
 - selected-year comparison table;
+- GDP-per-capita PPP scatterplot with log income axis and selected-country highlighting;
+- descriptive correlation between log GDP per capita and the selected indicator;
+- shareable URLs preserving the full view;
 - responsive choropleth, trend, ranking, and relationship charts;
 - dark mode and downloadable CSV;
 - visible methodological warnings and source provenance.
@@ -89,7 +93,8 @@ See [publishing strategy](docs/PUBLISHING.md).
 
 - Code: AGPL-3.0-or-later.
 - Original documentation, visual design, and exported figures: CC BY-SA 4.0.
-- Third-party and derived data: source-specific terms remain in force.
+- World Bank GDP data: CC BY 4.0.
+- Other third-party and derived data: source-specific terms remain in force.
 
 See [licence policy](LICENSE_POLICY.md).
 
