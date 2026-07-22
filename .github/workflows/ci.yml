@@ -80,14 +80,23 @@ jobs:
           curl --fail --silent --show-error --location \
             --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/app-main.js" --output /tmp/live-app-main.js
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/personalize.css" --output /tmp/live-personalize.css
           grep -q 'id="dashboard-shell"' /tmp/live-index.html
           grep -q 'id="country-search"' /tmp/live-index.html
           grep -q 'id="benchmark-select"' /tmp/live-index.html
           grep -q 'id="gdp-chart"' /tmp/live-index.html
           grep -q 'No add button needed' /tmp/live-index.html
-          grep -q 'function renderGdpScatter' /tmp/live-app-charts.js
+          grep -q 'Personal target builder' /tmp/live-app-main.js
+          grep -q 'Protein supply ÷ estimated adult bodyweight (g/kg/day)' /tmp/live-app-main.js
+          grep -q 'gdp-selected-values' /tmp/live-app-main.js
+          grep -q 'weight_management' /tmp/live-app-main.js
+          grep -q 'older_active' /tmp/live-app-main.js
+          grep -q 'reference-card-grid' /tmp/live-personalize.css
           grep -q 'country-search.*addEventListener("input"' /tmp/live-app-main.js
           test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
+          test "$(wc -c < /tmp/live-personalize.css)" -gt 2000
           python - <<'PY'
           import json
           from pathlib import Path
@@ -100,7 +109,7 @@ jobs:
           assert coverage["gdp_countries"] >= 175
           assert any(row[6] is not None for row in payload["rows"])
           print(
-              "Live v0.3 explorer verified:",
+              "Live personalized explorer verified:",
               f"{len(payload['rows']):,} rows,",
               f"{coverage['gdp_records']:,} GDP matches across",
               f"{coverage['gdp_countries']} countries",
