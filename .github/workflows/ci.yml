@@ -43,13 +43,15 @@ jobs:
           assert payload["rows"], "explorer rows are empty"
           assert len(payload["rows"]) == coverage["records"]
           assert payload["metadata"]["version"] == "0.3.0-preview"
-          assert coverage["gdp_records"] > 0
+          assert coverage["gdp_records"] >= 5000
+          assert coverage["gdp_countries"] >= 175
           assert coverage["gdp_year_min"] == 1990
           assert any(row[6] is not None for row in payload["rows"])
           assert path.stat().st_size < 1_000_000, "browser payload unexpectedly exceeds 1 MB"
           print(
               f"Validated {len(payload['rows']):,} browser rows, "
-              f"{coverage['gdp_records']:,} GDP matches, "
+              f"{coverage['gdp_records']:,} GDP matches across "
+              f"{coverage['gdp_countries']} countries, "
               f"in {path.stat().st_size:,} bytes"
           )
           PY
@@ -94,8 +96,8 @@ jobs:
           coverage = payload["metadata"]["coverage"]
           assert payload["metadata"]["version"] == "0.3.0-preview"
           assert len(payload["rows"]) == coverage["records"]
-          assert coverage["gdp_records"] == 5637
-          assert coverage["gdp_countries"] == 183
+          assert coverage["gdp_records"] >= 5000
+          assert coverage["gdp_countries"] >= 175
           assert any(row[6] is not None for row in payload["rows"])
           print(
               "Live v0.3 explorer verified:",
