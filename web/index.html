@@ -4,13 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore national protein supply relative to estimated adult bodyweight across countries and time.">
+  <meta name="theme-color" content="#f5f1e8">
   <title>Protein / kg — Country Explorer</title>
-  <link rel="preconnect" href="https://cdn.plot.ly">
   <link rel="stylesheet" href="./styles.css">
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+  <script src="./vendor/plotly-geo-3.5.1.min.js" charset="utf-8" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#explorer">Skip to explorer</a>
+
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Protein per kilogram home">
       <span class="brand-mark">P/kg</span>
@@ -19,6 +21,7 @@
     <nav aria-label="Primary navigation">
       <a href="#explorer">Explorer</a>
       <a href="#method">Method</a>
+      <a href="#sources">Sources</a>
       <a href="https://github.com/jnton/protein-by-bodyweight-country">GitHub</a>
       <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle color theme">◐</button>
     </nav>
@@ -60,69 +63,81 @@
           <p class="eyebrow">Interactive explorer</p>
           <h2>How does the world compare?</h2>
         </div>
-        <p id="data-warning" class="warning-pill">Preliminary adult proxy</p>
+        <p id="data-warning" class="warning-pill" aria-live="polite">Preliminary adult bodyweight proxy</p>
       </div>
 
-      <div class="control-panel">
-        <label>
-          Indicator
-          <select id="metric-select">
-            <option value="protein_supply_g_kg_day">Protein supply per kg</option>
-            <option value="protein_supply_g_day">Protein supply per person</option>
-            <option value="estimated_adult_bodyweight_kg">Estimated adult bodyweight</option>
-          </select>
-        </label>
-        <label class="year-control">
-          Year <output id="year-output">2016</output>
-          <input id="year-slider" type="range" min="1975" max="2016" value="2016" step="1">
-        </label>
-        <label>
-          Compare countries
-          <select id="country-select" multiple size="5" aria-label="Select countries to compare"></select>
-        </label>
+      <div id="loading-state" class="loading-state" role="status" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <div>
+          <strong>Preparing the global explorer</strong>
+          <span>Loading a compact country-year dataset and chart engine…</span>
+        </div>
       </div>
 
-      <div class="dashboard-grid">
-        <article class="panel map-panel">
-          <div class="panel-heading">
-            <div>
-              <span class="panel-kicker">World map</span>
-              <h3 id="map-title">Protein supply per kg, 2016</h3>
-            </div>
-            <span id="map-coverage" class="small-stat">— countries</span>
-          </div>
-          <div id="map-chart" class="chart large-chart" role="img" aria-label="World choropleth map"></div>
-        </article>
+      <div id="dashboard-shell" hidden>
+        <div class="control-panel">
+          <label>
+            Indicator
+            <select id="metric-select">
+              <option value="protein_supply_g_kg_day">Protein supply per kg</option>
+              <option value="protein_supply_g_day">Protein supply per person</option>
+              <option value="estimated_adult_bodyweight_kg">Estimated adult bodyweight</option>
+            </select>
+          </label>
+          <label class="year-control">
+            <span>Year <output id="year-output">2016</output></span>
+            <input id="year-slider" type="range" min="1975" max="2016" value="2016" step="1">
+            <small>Available: <span id="year-range-hint">1975–2016</span>. Charts update when released.</small>
+          </label>
+          <label>
+            <span>Compare countries <small id="selection-count">5/8 selected</small></span>
+            <select id="country-select" multiple size="5" aria-label="Select up to eight countries to compare"></select>
+            <small>Use Ctrl or ⌘ to select multiple countries.</small>
+          </label>
+        </div>
 
-        <article class="panel ranking-panel">
-          <div class="panel-heading">
-            <div>
-              <span class="panel-kicker">Ranking</span>
-              <h3>Highest values</h3>
+        <div class="dashboard-grid">
+          <article class="panel map-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">World map</span>
+                <h3 id="map-title">Protein supply per kg, 2016</h3>
+              </div>
+              <span id="map-coverage" class="small-stat">— countries</span>
             </div>
-          </div>
-          <ol id="ranking-list" class="ranking-list"></ol>
-        </article>
+            <div id="map-chart" class="chart large-chart" role="img" aria-label="World choropleth map"></div>
+          </article>
 
-        <article class="panel trend-panel">
-          <div class="panel-heading">
-            <div>
-              <span class="panel-kicker">Time series</span>
-              <h3 id="trend-title">Selected countries</h3>
+          <article class="panel ranking-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">Ranking</span>
+                <h3>Highest values</h3>
+              </div>
             </div>
-          </div>
-          <div id="trend-chart" class="chart" role="img" aria-label="Country comparison time series"></div>
-        </article>
+            <ol id="ranking-list" class="ranking-list"></ol>
+          </article>
 
-        <article class="panel relationship-panel">
-          <div class="panel-heading">
-            <div>
-              <span class="panel-kicker">Relationship</span>
-              <h3>Protein supply vs. bodyweight</h3>
+          <article class="panel trend-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">Time series</span>
+                <h3 id="trend-title">Selected countries</h3>
+              </div>
             </div>
-          </div>
-          <div id="scatter-chart" class="chart" role="img" aria-label="Protein supply and estimated bodyweight scatter plot"></div>
-        </article>
+            <div id="trend-chart" class="chart" role="img" aria-label="Country comparison time series"></div>
+          </article>
+
+          <article class="panel relationship-panel">
+            <div class="panel-heading">
+              <div>
+                <span class="panel-kicker">Relationship</span>
+                <h3>Protein supply vs. bodyweight</h3>
+              </div>
+            </div>
+            <div id="scatter-chart" class="chart" role="img" aria-label="Protein supply and estimated bodyweight scatter plot"></div>
+          </article>
+        </div>
       </div>
     </section>
 
@@ -155,6 +170,29 @@
         <a class="button secondary" href="https://github.com/jnton/protein-by-bodyweight-country/blob/main/docs/METHODOLOGY.md">Read methodology</a>
       </div>
     </section>
+
+    <section id="sources" class="section sources-section">
+      <div class="section-heading narrow">
+        <div>
+          <p class="eyebrow">Provenance first</p>
+          <h2>Every layer points back to its source.</h2>
+        </div>
+      </div>
+      <div class="source-grid">
+        <article>
+          <span class="source-tag">Protein</span>
+          <h3>FAOSTAT via Our World in Data</h3>
+          <p>Annual per-capita protein supply. This represents availability in the food system rather than observed individual consumption.</p>
+          <a href="https://ourworldindata.org/grapher/daily-per-capita-protein-supply#sources-and-processing">Source and processing →</a>
+        </article>
+        <article>
+          <span class="source-tag">Anthropometry</span>
+          <h3>NCD-RisC via Our World in Data</h3>
+          <p>Sex-specific BMI and adult-height estimates used to construct the preliminary adult bodyweight denominator.</p>
+          <a href="https://github.com/jnton/protein-by-bodyweight-country/blob/main/config/sources.json">Machine-readable source registry →</a>
+        </article>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -162,9 +200,16 @@
     <p>Source data retain their original licences and attribution requirements.</p>
   </footer>
 
-  <div id="error-state" class="error-state" hidden>
-    <strong>Dataset unavailable.</strong>
-    <span>Run <code>make data</code> before serving the site.</span>
+  <div id="error-state" class="error-state" hidden role="alert">
+    <div>
+      <strong>The explorer could not start.</strong>
+      <span id="error-detail">An unknown loading error occurred.</span>
+    </div>
+    <button id="retry-button" type="button">Reload</button>
   </div>
+
+  <noscript>
+    <div class="noscript-state">JavaScript is required for the interactive explorer. The generated CSV remains available from the download link above.</div>
+  </noscript>
 </body>
 </html>
