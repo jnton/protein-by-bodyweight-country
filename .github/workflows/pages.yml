@@ -48,7 +48,41 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 15
     steps:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Smoke-test public deployment
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"
+
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/" --output /tmp/index.html
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/data/explorer.json" --output /tmp/explorer.json
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/vendor/plotly-geo-3.5.1.min.js" --output /tmp/plotly.js
+
+          grep -q 'id="dashboard-shell"' /tmp/index.html
+          test "$(wc -c < /tmp/plotly.js)" -gt 100000
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/explorer.json").read_text(encoding="utf-8"))
+          assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
+          assert payload["metadata"]["version"] == "0.1.1-preview"
+          print(
+              "Live deployment verified:",
+              f"{len(payload['countries'])} country entities,",
+              f"{len(payload['rows']):,} country-year rows",
+          )
+          PY

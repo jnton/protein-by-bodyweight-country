@@ -43,6 +43,31 @@ jobs:
           PY
       - name: Check deploy-time chart bundle
         run: curl --fail --head --location --retry 3 https://cdn.plot.ly/plotly-geo-3.5.1.min.js
+      - name: Probe current public explorer
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          base="https://jnton.github.io/protein-by-bodyweight-country"
+          curl --fail --silent --show-error --location \
+            --retry 6 --retry-delay 5 --retry-all-errors \
+            "$base/" --output /tmp/live-index.html
+          curl --fail --silent --show-error --location \
+            --retry 6 --retry-delay 5 --retry-all-errors \
+            "$base/data/explorer.json" --output /tmp/live-explorer.json
+          curl --fail --silent --show-error --location \
+            --retry 6 --retry-delay 5 --retry-all-errors \
+            "$base/vendor/plotly-geo-3.5.1.min.js" --output /tmp/live-plotly.js
+          grep -q 'id="dashboard-shell"' /tmp/live-index.html
+          test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path("/tmp/live-explorer.json").read_text(encoding="utf-8"))
+          assert payload["metadata"]["version"] == "0.1.1-preview"
+          assert len(payload["rows"]) == payload["metadata"]["coverage"]["records"]
+          print(f"Current public site serves {len(payload['rows']):,} validated rows")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: preview-dataset
