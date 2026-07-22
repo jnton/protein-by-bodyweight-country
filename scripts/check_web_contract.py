@@ -8,13 +8,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML_PATH = ROOT / "web" / "index.html"
-JS_PATH = ROOT / "web" / "app.js"
+JS_PATHS = [
+    ROOT / "web" / "app-data.js",
+    ROOT / "web" / "app-charts.js",
+    ROOT / "web" / "app-main.js",
+]
 CONFIG_PATH = ROOT / "config" / "sources.json"
 
 
 def main() -> None:
     html = HTML_PATH.read_text(encoding="utf-8")
-    javascript = JS_PATH.read_text(encoding="utf-8")
+    javascript = "\n".join(path.read_text(encoding="utf-8") for path in JS_PATHS)
     config = CONFIG_PATH.read_text(encoding="utf-8")
 
     html_ids = set(re.findall(r'\bid="([^"]+)"', html))
@@ -22,6 +26,11 @@ def main() -> None:
     missing = sorted(js_ids - html_ids)
     if missing:
         raise SystemExit(f"JavaScript references missing HTML ids: {missing}")
+
+    required_scripts = {path.name for path in JS_PATHS}
+    absent_scripts = sorted(name for name in required_scripts if name not in html)
+    if absent_scripts:
+        raise SystemExit(f"HTML does not load controller files: {absent_scripts}")
 
     required_ids = {
         "metric-select",
@@ -48,7 +57,8 @@ def main() -> None:
         "deficit",
     }
     absent_benchmarks = sorted(
-        key for key in required_benchmarks
+        key
+        for key in required_benchmarks
         if not re.search(rf"\b{re.escape(key)}\s*:", javascript)
     )
     if absent_benchmarks:
@@ -75,7 +85,8 @@ def main() -> None:
 
     print(
         f"Validated {len(html_ids)} HTML ids, {len(js_ids)} JavaScript id references, "
-        f"{len(required_benchmarks)} benchmark definitions, and GDP source wiring."
+        f"{len(required_scripts)} controller files, {len(required_benchmarks)} benchmark "
+        "definitions, and GDP source wiring."
     )
 
 
