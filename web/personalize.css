@@ -1,0 +1,222 @@
+.personal-target-builder {
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.personal-target-heading,
+.reference-library-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.personal-target-heading strong,
+.reference-library-heading h3 {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(1.05rem, 1.4vw, 1.35rem);
+}
+
+.personalize-panel {
+  display: grid;
+  grid-template-columns: minmax(210px, 1.4fr) repeat(3, minmax(140px, .8fr));
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.personalize-panel[hidden] {
+  display: none;
+}
+
+.personalize-panel label {
+  display: grid;
+  gap: 7px;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+
+.personalize-panel select,
+.personalize-panel input {
+  width: 100%;
+}
+
+.personal-target-output {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.personal-target-output > span {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 15px;
+  border: 1px solid var(--border);
+  background: var(--panel-strong);
+}
+
+.personal-target-output small {
+  color: var(--muted);
+}
+
+.personal-target-output strong {
+  font-size: 1rem;
+}
+
+.personal-target-caveat {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: .84rem;
+  line-height: 1.5;
+}
+
+.personalize-panel > a {
+  grid-column: 1 / -1;
+  width: fit-content;
+  color: var(--secondary);
+  font-weight: 700;
+}
+
+.gdp-formula-note {
+  margin: -4px 0 8px;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+.gdp-selected-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 10px 0 4px;
+}
+
+.gdp-selected-values > span {
+  display: grid;
+  gap: 2px;
+  min-width: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-strong);
+}
+
+.gdp-selected-values strong {
+  font-size: .82rem;
+}
+
+.gdp-selected-values b {
+  color: var(--accent);
+  font-size: .94rem;
+}
+
+.gdp-selected-values small {
+  color: var(--muted);
+}
+
+.reference-library {
+  margin: 28px 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  background: var(--panel);
+}
+
+.reference-library-heading p:last-child {
+  max-width: 430px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.reference-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.reference-card {
+  display: grid;
+  gap: 7px;
+  min-height: 125px;
+  padding: 16px;
+  text-align: left;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel-strong);
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.reference-card:hover,
+.reference-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--secondary);
+  background: color-mix(in srgb, var(--panel-strong) 88%, var(--secondary) 12%);
+}
+
+.reference-card span {
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 750;
+}
+
+.reference-card strong {
+  font-size: 1.32rem;
+}
+
+.reference-card small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.comparison-panel td strong + small {
+  display: block;
+  margin-top: 4px;
+}
+
+@media (max-width: 1000px) {
+  .personalize-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reference-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .personal-target-heading,
+  .reference-library-heading {
+    display: grid;
+  }
+
+  .personalize-panel,
+  .personal-target-output,
+  .reference-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .personal-target-builder,
+  .reference-library {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .gdp-selected-values > span {
+    flex: 1 1 100%;
+  }
+}
