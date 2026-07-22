@@ -18,4 +18,8 @@ Attribution suggestion:
 
 Third-party source data and derived datasets are not automatically relicensed by this repository. Each output must retain source-level attribution, provenance, and applicable licence terms. Where a source prevents redistribution, only code and non-infringing summaries or visualizations are published.
 
+The GDP-per-capita layer uses World Bank World Development Indicators data under Creative Commons Attribution 4.0 International (`CC BY 4.0`). The indicator and provider must remain attributed in derived tables and visualizations.
+
+Other source layers retain their own terms as recorded in `config/sources.json` and the generated metadata.
+
 Nothing in this file grants rights that the project does not possess.
