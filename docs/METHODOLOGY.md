@@ -2,13 +2,13 @@
 
 ## Research question
 
-How much protein is available in each country per day relative to the estimated body mass of its population?
+How much protein is available in each country per day relative to the estimated body mass of its population, and how does that ecological indicator vary with national income?
 
 The project deliberately distinguishes **protein supply**, **modelled dietary intake**, and **observed dietary intake**. These are not interchangeable.
 
 ## Current preview model
 
-The first public release calculates:
+The public preview calculates:
 
 \[
 \text{protein supply per estimated adult kg}_{c,y}
@@ -42,6 +42,29 @@ E\left(\frac{P}{W}\right)
 \]
 
 The dashboard must therefore use wording such as **protein supply per estimated kilogram of bodyweight**, not “the average person consumes X g/kg.”
+
+## GDP-per-capita context
+
+The explorer matches each country-year to the World Bank indicator:
+
+```text
+NY.GDP.PCAP.PP.KD
+GDP per capita, PPP (constant 2021 international $)
+```
+
+Purchasing-power parity is used because it is more appropriate than market exchange rates for comparing average material resources across countries. Constant 2021 international dollars make observations more comparable through time.
+
+The GDP scatterplot uses a logarithmic horizontal axis because national income is strongly right-skewed. The displayed Pearson correlation is calculated between:
+
+```text
+log10(GDP per capita PPP)
+and
+the selected protein/bodyweight indicator
+```
+
+This is a descriptive cross-country association. It is not evidence that GDP causes protein supply, bodyweight, or dietary adequacy. Potential confounding includes food-system structure, trade, inequality, demographics, urbanization, public policy, and measurement differences.
+
+World Bank GDP coverage in the source series begins in 1990. Earlier protein/bodyweight years remain available in the other plots but cannot appear in the GDP relationship panel.
 
 ## Final all-age model
 
@@ -118,5 +141,6 @@ Every derived row should eventually include:
 - Children are excluded from the bodyweight denominator.
 - `mean(BMI) × mean(height)²` does not exactly equal mean weight without the joint distribution.
 - Source estimates and their uncertainties are not yet propagated through Monte Carlo simulation.
+- GDP correlations are ecological and do not adjust for confounding or measurement error.
 
 These limitations are displayed in the interface and encoded in `estimate_status`.
