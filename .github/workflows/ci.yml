@@ -72,11 +72,32 @@ jobs:
           curl --fail --silent --show-error --location \
             --retry 12 --retry-delay 5 --retry-all-errors \
             "$base/vendor/plotly-geo-3.5.1.min.js" --output /tmp/live-plotly.js
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/app-polish.js" --output /tmp/live-app-polish.js
+          curl --fail --silent --show-error --location \
+            --retry 12 --retry-delay 5 --retry-all-errors \
+            "$base/polish.css" --output /tmp/live-polish.css
+
           grep -q 'id="dashboard-shell"' /tmp/live-index.html
           grep -q 'id="country-search"' /tmp/live-index.html
           grep -q 'id="benchmark-select"' /tmp/live-index.html
           grep -q 'id="gdp-chart"' /tmp/live-index.html
+          grep -q 'app-polish.js' /tmp/live-index.html
+          grep -q 'polish.css' /tmp/live-index.html
+          grep -q 'Protein recommendation lab' /tmp/live-app-polish.js
+          grep -q 'Log income' /tmp/live-app-polish.js
+          grep -q 'Linear income' /tmp/live-app-polish.js
+          grep -q 'Show active protein reference' /tmp/live-app-polish.js
+          grep -q 'EFSA Population Reference Intake' /tmp/live-app-polish.js
+          grep -q 'Academy / Dietitians of Canada / ACSM athletes' /tmp/live-app-polish.js
+          grep -q 'WHO/FAO/UNU safe level' /tmp/live-app-polish.js
+          grep -q '.benchmark-lab-panel' /tmp/live-polish.css
+          grep -q '.gdp-chart-controls' /tmp/live-polish.css
           test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
+          test "$(wc -c < /tmp/live-app-polish.js)" -gt 10000
+          test "$(wc -c < /tmp/live-polish.css)" -gt 3000
+
           python - <<'PY'
           import json
           from pathlib import Path
@@ -89,7 +110,7 @@ jobs:
           assert coverage["gdp_countries"] >= 175
           assert any(row[6] is not None for row in payload["rows"])
           print(
-              "Current public explorer reachable:",
+              "Live clean GDP + benchmark lab verified:",
               f"{len(payload['rows']):,} rows,",
               f"{coverage['gdp_records']:,} GDP matches across",
               f"{coverage['gdp_countries']} countries",
