@@ -98,10 +98,16 @@ jobs:
           grep -q 'EFSA Population Reference Intake' /tmp/live-app-polish.js
           grep -q 'Academy / Dietitians of Canada / ACSM athletes' /tmp/live-app-polish.js
           grep -q 'WHO/FAO/UNU safe level' /tmp/live-app-polish.js
+          grep -q 'one persistent protein-reference selector' /tmp/live-app-polish.js
+          grep -q 'reference-dock-select' /tmp/live-app-polish.js
+          grep -q 'Customize this range' /tmp/live-app-polish.js
+          grep -q 'installBenchmarkLabV04 = function() {}' /tmp/live-app-polish.js
+          grep -q '.reference-dock-trigger' /tmp/live-polish.css
+          grep -q '.reference-dock-panel' /tmp/live-polish.css
           grep -q '.gdp-chart-controls' /tmp/live-polish.css
           test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
-          test "$(wc -c < /tmp/live-app-polish.js)" -gt 10000
-          test "$(wc -c < /tmp/live-polish.css)" -gt 3000
+          test "$(wc -c < /tmp/live-app-polish.js)" -gt 15000
+          test "$(wc -c < /tmp/live-polish.css)" -gt 5000
 
           python - <<'PY'
           import json
@@ -115,7 +121,7 @@ jobs:
           assert coverage["gdp_countries"] >= 175
           assert any(row[6] is not None for row in payload["rows"])
           print(
-              "Current public explorer reachable:",
+              "Live persistent reference selector verified:",
               f"{len(payload['rows']):,} rows,",
               f"{coverage['gdp_records']:,} GDP matches across",
               f"{coverage['gdp_countries']} countries",
