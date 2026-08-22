@@ -37,18 +37,24 @@ This is an ecological adult proxy, not an individual dietary recommendation and 
 - country selection by typing a name/ISO code, pressing Enter, clicking the map, or clicking the ranking;
 - removable country chips and presets;
 - comparison of up to 10 countries;
-- one protein reference at a time, displayed as separate minimum and upper-end lines;
+- dedicated protein recommendation lab that compares many sourced ranges without covering the country charts;
+- one-click selection of a single active recommendation overlay for the time series;
+- fully editable custom lower/upper target using bodyweight or fat-free-mass basis;
+- body-fat conversion for FFM-based recommendations;
+- general-adult, exercise, weight-management, older-adult, hypocaloric, and evidence-reference categories;
+- separate display of reputable references that cannot honestly be reduced to one adult g/kg/day line;
 - explicit note that no universal protein upper intake level has been established;
-- body-fat conversion for the FFM-based hypocaloric athlete range;
 - selected-year comparison table;
-- GDP-per-capita PPP scatterplot with log income axis and selected-country highlighting;
-- descriptive correlation between log GDP per capita and the selected indicator;
-- shareable URLs preserving the full view;
+- cleaner GDP-per-capita PPP scatterplot with selectable log or linear income axis;
+- recommendation lines disabled by default in the GDP scatter, with an opt-in toggle;
+- exact selected-country GDP and protein values outside the plotting area;
+- descriptive regression and correlation with explicit non-causal wording;
+- shareable URLs preserving the main explorer state;
 - responsive choropleth, trend, ranking, and relationship charts;
 - dark mode and downloadable CSV;
 - visible methodological warnings and source provenance.
 
-Benchmark overlays are contextual only. The plotted country series is food supply divided by a modelled bodyweight proxy, not observed individual intake. See [benchmark definitions and caveats](docs/BENCHMARKS.md).
+Benchmark comparisons are contextual only. The plotted country series is food supply divided by a modelled bodyweight proxy, not observed individual intake. See [benchmark definitions and caveats](docs/BENCHMARKS.md) and [personal target documentation](docs/PERSONAL_TARGETS.md).
 
 ## Run locally
 
