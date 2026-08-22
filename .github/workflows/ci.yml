@@ -26,6 +26,13 @@ jobs:
           node --check web/app-charts.js
           node --check web/app-main.js
           node --check web/app-polish.js
+          node --check web/app-reference-dock.js
+          cat web/app-polish.js web/app-reference-dock.js > /tmp/app-polish-bundled.js
+          node --check /tmp/app-polish-bundled.js
+          grep -q 'reference-dock-select' web/app-reference-dock.js
+          grep -q 'Customize this range' web/app-reference-dock.js
+          grep -q 'installBenchmarkLabV04 = function() {}' web/app-reference-dock.js
+          grep -q '.reference-dock-trigger' web/reference-dock.css
           python scripts/check_web_contract.py
       - run: python scripts/build_dataset.py
       - name: Check generated outputs
@@ -85,14 +92,12 @@ jobs:
           grep -q 'id="gdp-chart"' /tmp/live-index.html
           grep -q 'app-polish.js' /tmp/live-index.html
           grep -q 'polish.css' /tmp/live-index.html
-          grep -q 'Protein recommendation lab' /tmp/live-app-polish.js
           grep -q 'Log income' /tmp/live-app-polish.js
           grep -q 'Linear income' /tmp/live-app-polish.js
           grep -q 'Show active protein reference' /tmp/live-app-polish.js
           grep -q 'EFSA Population Reference Intake' /tmp/live-app-polish.js
           grep -q 'Academy / Dietitians of Canada / ACSM athletes' /tmp/live-app-polish.js
           grep -q 'WHO/FAO/UNU safe level' /tmp/live-app-polish.js
-          grep -q '.benchmark-lab-panel' /tmp/live-polish.css
           grep -q '.gdp-chart-controls' /tmp/live-polish.css
           test "$(wc -c < /tmp/live-plotly.js)" -gt 100000
           test "$(wc -c < /tmp/live-app-polish.js)" -gt 10000
@@ -110,7 +115,7 @@ jobs:
           assert coverage["gdp_countries"] >= 175
           assert any(row[6] is not None for row in payload["rows"])
           print(
-              "Live clean GDP + benchmark lab verified:",
+              "Current public explorer reachable:",
               f"{len(payload['rows']):,} rows,",
               f"{coverage['gdp_records']:,} GDP matches across",
               f"{coverage['gdp_countries']} countries",
